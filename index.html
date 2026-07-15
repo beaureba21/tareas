@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Tareas - Atelier de la Flor</title>
-    <!-- Fuentes elegantes y Chart.js para las métricas visuales -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Importación de las librerías oficiales de Firebase (Compat SDK para fácil adaptación local) -->
@@ -12,19 +11,22 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
         :root {
-            --bg-color: #faf6f4; /* Arena de lino suave, cálida y limpia */
+            --bg-color: #FAF6F4; /* Arena de lino suave y natural */
             --card-bg: #ffffff;
-            --primary: #9e2a2b; /* Rojo Atelier elegante */
-            --primary-hover: #7e1e20;
-            --primary-light: #fdf5f3;
-            --neutral-dark: #2d1f1e; /* Marrón oscuro cálido */
-            --neutral-muted: #8c7674;
-            --border-color: #ebdcd7;
+            --primary: #D33C3B; /* El rojo carmín exacto de la marca */
+            --primary-hover: #A82E2D;
+            --primary-light: #FDF2F1;
+            --accent-gold: #DEC187; /* El dorado crema de la tipografía del logotipo */
+            --neutral-dark: #2C2223; /* Marrón oscuro cálido */
+            --neutral-muted: #8E7C7D;
+            --border-color: #EFE6E4;
             
-            /* Colores de Semáforo para estados de tareas */
-            --color-pendiente: #d93829;  /* Rojo sutil */
-            --color-proceso: #f1b40f;    /* Amarillo cálido */
-            --color-completada: #27ae60; /* Verde oliva brillante */
+            /* Colores de Semáforo elegantes y coherentes */
+            --color-pendiente: #E56A5E;  
+            --color-proceso: #E9B858;    
+            --color-completada: #7A9A7D; 
+            --shadow-soft: 0 6px 24px rgba(44, 34, 35, 0.04);
+            --shadow-hover: 0 12px 32px rgba(211, 60, 59, 0.08);
         }
 
         body {
@@ -32,7 +34,7 @@
             background-color: var(--bg-color);
             color: var(--neutral-dark);
             margin: 0;
-            padding: 20px;
+            padding: 40px 20px;
             -webkit-font-smoothing: antialiased;
         }
 
@@ -43,138 +45,167 @@
 
         header {
             text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Contenedor del Logo de Atelier de la Flor */
+        .brand-logo {
+            width: 100%;
+            max-width: 340px;
+            height: auto;
+            margin-bottom: 25px;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.05));
+            transition: transform 0.3s ease;
+        }
+        
+        .brand-logo:hover {
+            transform: scale(1.02);
+        }
+
+        .status-badge {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(211, 60, 59, 0.15);
+        }
+
+        /* Pantalla de Acceso con un marco de diseño sutil */
+        .auth-screen {
+            max-width: 440px;
+            margin: 60px auto;
+            background: var(--card-bg);
+            padding: 45px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-hover);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            position: relative;
+        }
+
+        .auth-screen::before {
+            content: '';
+            position: absolute;
+            top: 10px; left: 10px; right: 10px; bottom: 10px;
+            border: 1px solid var(--accent-gold);
+            border-radius: 12px;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        .logo-frame {
             margin-bottom: 35px;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 25px;
         }
 
-        /* Estilo para el logotipo integrado */
-        .brand-logo {
-            max-width: 320px;
-            width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto 15px auto;
-        }
-
-        .status-badge {
-            background-color: #f7ebe8;
-            color: var(--primary);
-            padding: 6px 14px;
-            border-radius: 9999px;
-            font-size: 0.8rem;
-            display: inline-block;
-            margin-bottom: 10px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        /* Pantalla de Acceso */
-        .auth-screen {
-            max-width: 420px;
-            margin: 80px auto;
-            background: var(--card-bg);
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 35px rgba(158, 42, 43, 0.08);
-            border: 1px solid var(--border-color);
-            text-align: center;
-        }
-
-        .logo-frame {
-            margin-bottom: 30px;
-            padding-bottom: 10px;
-        }
-
-        .logo-frame .brand-logo {
-            max-width: 290px;
-        }
-
         .auth-screen p {
             color: var(--neutral-muted);
-            font-size: 0.9rem;
-            margin-bottom: 25px;
-            line-height: 1.5;
+            font-size: 0.95rem;
+            margin-bottom: 30px;
+            line-height: 1.6;
         }
 
-        /* Menú de Navegación */
+        /* Secciones y Pestañas del Menú */
         .navigation-menu {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin-bottom: 30px;
             flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 35px;
         }
 
         .nav-btn {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--neutral-dark);
-            padding: 11px 22px;
+            padding: 12px 24px;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-            transition: all 0.25s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             font-size: 0.9rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+            letter-spacing: 0.3px;
         }
 
         .nav-btn:hover, .nav-btn.active {
             background-color: var(--primary);
             color: white;
             border-color: var(--primary);
-            box-shadow: 0 4px 12px rgba(158, 42, 43, 0.15);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(211, 60, 59, 0.2);
         }
 
-        /* Caja de Presencia Sincronizada */
+        /* Listado de Participantes */
         .participants-box {
-            background: #fcf4f2;
+            background: #F5EEEC;
             border: 1px solid var(--border-color);
-            padding: 18px 24px;
-            border-radius: 10px;
-            margin-bottom: 30px;
+            padding: 20px 25px;
+            border-radius: 12px;
+            margin-bottom: 35px;
         }
+        
         .participants-box h3 { 
             margin: 0 0 12px 0; 
-            font-size: 0.85rem; 
+            font-size: 0.8rem; 
             color: var(--primary); 
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            font-weight: 700;
         }
-        .participant-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        
+        .participant-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+        
         .participant-tag {
             background: #ffffff;
             border: 1px solid var(--border-color);
             color: var(--neutral-dark);
             padding: 6px 14px;
-            border-radius: 20px;
+            border-radius: 50px;
             font-size: 0.8rem;
             font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+            transition: all 0.2s ease;
         }
+        
         .participant-tag.offline {
             opacity: 0.6;
             border-style: dashed;
-            background: #fafaf9;
+            background: rgba(255,255,255,0.4);
         }
 
-        /* Formularios de Configuración de Tareas */
+        /* Formularios e Inputs */
         .form-container {
             background-color: var(--card-bg);
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 25px rgba(44, 37, 35, 0.03);
+            border-radius: 14px;
+            box-shadow: var(--shadow-soft);
             margin-bottom: 35px;
             border: 1px solid var(--border-color);
         }
 
+        .form-container h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-family: 'Playfair Display', serif;
+            color: var(--primary);
+            font-size: 1.4rem;
+        }
+
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 18px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
             align-items: flex-end;
         }
 
@@ -185,68 +216,71 @@
         }
 
         .form-group label {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             color: var(--neutral-dark);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1.2px;
         }
 
         .form-group input, .form-group select {
-            padding: 12px;
+            padding: 13px 16px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             font-size: 0.95rem;
             color: var(--neutral-dark);
             outline: none;
-            background-color: #fafaf9;
-            transition: all 0.2s ease;
+            background-color: #FAF8F7;
+            transition: all 0.25s ease;
         }
 
         .form-group input:focus, .form-group select:focus {
             border-color: var(--primary);
             background-color: #ffffff;
-            box-shadow: 0 0 0 3px rgba(158, 42, 43, 0.08);
+            box-shadow: 0 0 0 3px rgba(211, 60, 59, 0.1);
         }
 
         .btn-submit {
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 13px 22px;
+            padding: 14px 24px;
             border-radius: 8px;
             font-size: 0.95rem;
             cursor: pointer;
             font-weight: 600;
-            transition: background 0.2s;
-            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            letter-spacing: 0.3px;
         }
 
-        .btn-submit:hover { background-color: var(--primary-hover); }
+        .btn-submit:hover { 
+            background-color: var(--primary-hover); 
+            transform: translateY(-1px);
+        }
 
         /* Columnas de Estados (Tablero Kanban) */
         .board {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 25px;
         }
 
         .column {
-            background-color: #f7ebe8;
-            padding: 22px;
-            border-radius: 12px;
-            min-height: 450px;
+            background-color: #F5EEEC;
+            padding: 24px;
+            border-radius: 14px;
+            min-height: 480px;
             border: 1px solid var(--border-color);
         }
 
         .column h2 {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             margin-top: 0;
             padding-bottom: 14px;
             color: var(--neutral-dark);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
             font-weight: 700;
         }
 
@@ -254,21 +288,21 @@
         .column.proceso h2 { border-bottom: 3px solid var(--color-proceso); }
         .column.completada h2 { border-bottom: 3px solid var(--color-completada); }
 
-        /* Tarjetas de Tareas */
+        /* Tarjetas de Tareas Semáforo */
         .task-card {
             background-color: var(--card-bg);
-            padding: 18px;
-            border-radius: 8px;
+            padding: 22px;
+            border-radius: 12px;
             margin-bottom: 18px;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.02);
+            box-shadow: var(--shadow-soft);
             border: 1px solid var(--border-color);
             border-left: 6px solid #ccc;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .task-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(44, 37, 35, 0.05);
+            box-shadow: var(--shadow-hover);
         }
 
         .task-card.border-pendiente { border-left-color: var(--color-pendiente); }
@@ -277,25 +311,26 @@
 
         .task-card h3 {
             margin: 0 0 12px 0;
-            font-size: 1.05rem;
+            font-size: 1.15rem;
             font-family: 'Playfair Display', serif;
             font-weight: 600;
-            line-height: 1.4;
+            line-height: 1.3;
+            color: var(--neutral-dark);
         }
 
         .task-info {
             font-size: 0.85rem;
             color: var(--neutral-muted);
-            margin-bottom: 14px;
+            margin-bottom: 18px;
             line-height: 1.6;
         }
 
-        .task-info strong { color: var(--neutral-dark); }
+        .task-info strong { color: var(--neutral-dark); font-weight: 600; }
 
-        .task-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .task-actions { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
 
         .btn-action {
-            padding: 6px 12px;
+            padding: 8px 15px;
             font-size: 0.8rem;
             border: none;
             border-radius: 6px;
@@ -304,23 +339,25 @@
             transition: all 0.2s ease;
         }
 
-        .btn-next { background-color: var(--primary-light); color: var(--primary); border: 1px solid var(--primary); }
+        .btn-next { background-color: var(--primary-light); color: var(--primary); border: 1px solid rgba(211, 60, 59, 0.15); }
         .btn-next:hover { background-color: var(--primary); color: white; }
+        
         .btn-prev { background-color: #ffffff; color: var(--neutral-muted); border: 1px solid var(--border-color); }
-        .btn-prev:hover { background-color: #fafaf9; color: var(--neutral-dark); }
-        .btn-delete { background-color: #fde8e8; color: #e74c3c; margin-left: auto; }
-        .btn-delete:hover { background-color: #e74c3c; color: white; }
+        .btn-prev:hover { background-color: #FAF6F4; color: var(--neutral-dark); }
+        
+        .btn-delete { background-color: #FFF0F0; color: #D35C53; margin-right: auto; }
+        .btn-delete:hover { background-color: #D35C53; color: white; }
 
-        .vencida { color: #e74c3c !important; font-weight: bold; }
+        .vencida { color: var(--color-pendiente) !important; font-weight: bold; }
 
-        /* Panel de Lista de Tareas */
+        /* Panel de Lista Tradicional */
         .list-view-container {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 25px;
+            border-radius: 14px;
+            padding: 30px;
+            box-shadow: var(--shadow-soft);
             overflow-x: auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.01);
         }
 
         .task-table {
@@ -331,29 +368,30 @@
         }
 
         .task-table th, .task-table td {
-            padding: 14px 18px;
+            padding: 16px 20px;
             border-bottom: 1px solid var(--border-color);
         }
 
         .task-table th {
-            background-color: #fdf5f3;
+            background-color: #FAF6F4;
             color: var(--primary);
             text-transform: uppercase;
             font-size: 0.75rem;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
             font-weight: 700;
         }
 
         .badge {
             padding: 5px 12px;
-            border-radius: 12px;
+            border-radius: 50px;
             font-size: 0.75rem;
-            font-weight: bold;
+            font-weight: 700;
             display: inline-block;
+            letter-spacing: 0.3px;
         }
-        .badge.pendiente { background-color: #fadbd8; color: #c0392b; }
-        .badge.proceso { background-color: #fcf3cf; color: #b7950b; }
-        .badge.completada { background-color: #d4efdf; color: #1e8449; }
+        .badge.pendiente { background-color: #FBECEB; color: var(--color-pendiente); }
+        .badge.proceso { background-color: #FEF8EC; color: #C2932B; }
+        .badge.completada { background-color: #EFF4F0; color: var(--color-completada); }
 
         /* Dashboards de Métricas y Gráficos */
         .dashboard-grid {
@@ -366,103 +404,98 @@
         .db-card {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.01);
+            border-radius: 14px;
+            padding: 30px;
+            box-shadow: var(--shadow-soft);
             text-align: center;
         }
 
         .db-card h4 {
             margin: 0 0 20px 0;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             text-transform: uppercase;
             color: var(--primary);
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
             font-weight: 700;
         }
 
         .chart-wrapper {
             position: relative;
             margin: auto;
-            height: 230px;
-            width: 230px;
+            height: 240px;
+            width: 240px;
         }
 
         /* Tabla de Rankings */
         .ranking-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 15px;
             text-align: left;
         }
         .ranking-table th, .ranking-table td {
-            padding: 12px 10px;
+            padding: 12px 14px;
             border-bottom: 1px solid var(--border-color);
             font-size: 0.85rem;
         }
-        .ranking-table th { color: var(--primary); font-weight: 700; }
+        .ranking-table th { color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; }
 
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<!-- PANTALLA DE ACCESO (IDENTIFICACIÓN) -->
 <div id="authScreen" class="auth-screen">
     <div class="logo-frame">
-        <!-- Logotipo centrado en el acceso -->
-        <img src="LOGOTIPO ATELIER DE LA FLOR - PNG.png" alt="Atelier de la Flor Logo" class="brand-logo">
+        <!-- Enlace en la nube de Google Drive corregido para acceso global directo -->
+        <img src="https://lh3.googleusercontent.com/u/0/d/1QBuFp_iyt7CcldGBnUxeXYzQuOJy-eLN" alt="Atelier de la Flor" class="brand-logo">
     </div>
-    <p>Introduce las credenciales corporativas de la marca para sincronizar la agenda del taller.</p>
+    <p>Introduce tus credenciales corporativas para acceder al panel de agendas de taller.</p>
     <form id="authForm">
-        <div class="form-group" style="margin-bottom: 15px;">
+        <div class="form-group" style="margin-bottom: 20px;">
             <label for="authEmail">Correo Corporativo</label>
             <input type="email" id="authEmail" placeholder="nombre@atelierdelaflor.com" required>
         </div>
-        <div class="form-group" style="margin-bottom: 25px;">
+        <div class="form-group" style="margin-bottom: 30px;">
             <label for="authPassword">Contraseña de Acceso</label>
             <input type="password" id="authPassword" placeholder="••••••••" required>
         </div>
-        <button type="submit" class="btn-submit" style="width: 100%;">Ingresar a la agenda</button>
+        <button type="submit" class="btn-submit" style="width: 100%;">Entrar al Taller</button>
     </form>
 </div>
 
-<!-- CONTENIDO PRINCIPAL -->
 <div id="mainContent" class="container hidden">
     <header>
-        <!-- Logotipo centrado en el panel principal -->
-        <img src="LOGOTIPO ATELIER DE LA FLOR - PNG.png" alt="Atelier de la Flor Logo" class="brand-logo">
+        <!-- Enlace en la nube de Google Drive corregido en cabecera de la aplicación -->
+        <img src="https://lh3.googleusercontent.com/u/0/d/1QBuFp_iyt7CcldGBnUxeXYzQuOJy-eLN" alt="Atelier de la Flor" class="brand-logo">
         <div class="status-badge" id="sync-status">🔄 Sincronizando agendas con Firebase...</div>
-        <div id="userWelcome" style="font-weight: 500; color: var(--neutral-muted); font-size: 0.95rem; margin-top: 5px;"></div>
+        <div id="userWelcome" style="font-weight: 500; color: var(--neutral-muted); font-size: 0.9rem; letter-spacing: 0.3px;"></div>
     </header>
 
-    <!-- Menú de Navegación -->
     <div class="navigation-menu">
-        <button class="nav-btn active" id="btn-kanban" onclick="switchView('kanban')">📋 Tablero de Tareas</button>
-        <button class="nav-btn" id="btn-list" onclick="switchView('list')">🔍 Listado de Tareas</button>
-        <button class="nav-btn" id="btn-my-db" onclick="switchView('my-db')">🌸 Mis Métricas</button>
-        <button class="nav-btn" id="btn-global-db" onclick="switchView('global-db')">📊 Rendimiento General</button>
+        <button class="nav-btn active" onclick="switchView('kanban')">📋 Tablero de Tareas</button>
+        <button class="nav-btn" onclick="switchView('list')">🔍 Mi Lista de Tareas</button>
+        <button class="nav-btn" onclick="switchView('my-db')">🌸 Mis Métricas</button>
+        <button class="nav-btn" onclick="switchView('global-db')">📊 Rendimiento General</button>
     </div>
 
-    <!-- Caja de Presencia Sincronizada -->
     <div class="participants-box">
-        <h3>👥 Estado de conexión del equipo:</h3>
-        <div class="participant-tags" id="activeList">Cargando datos del equipo...</div>
+        <h3>👥 Conexiones activas:</h3>
+        <div class="participant-tags" id="activeList">Cargando...</div>
     </div>
 
-    <!-- SECCIÓN 1: TABLERO KANBAN -->
     <div id="section-kanban" class="view-section">
-        <!-- Formulario de Asignación (Visible solo para rol de Administración) -->
         <div class="form-container hidden" id="adminFormContainer">
+            <h2>🌸 Formulario de Control Técnico: Asignación de Pedidos</h2>
             <form id="taskForm" class="form-grid">
                 <div class="form-group">
-                    <label for="taskTitle">Tarea / Pedido / Evento</label>
+                    <label for="taskTitle">Tarea / Pedido</label>
                     <input type="text" id="taskTitle" placeholder="Ej: Preparar ramo de novia preservado" required>
                 </div>
                 <div class="form-group">
-                    <label for="taskWorker">Persona Asignada</label>
+                    <label for="taskWorker">Persona Asignada (Email)</label>
                     <select id="taskWorker" required>
-                        <option value="">Seleccionar cuenta...</option>
+                        <option value="">Selecciona una compañera...</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -473,7 +506,6 @@
             </form>
         </div>
 
-        <!-- Tablero de Estados Semáforo -->
         <div class="board">
             <div class="column pendiente">
                 <h2>🔴 Pendientes (<span id="count-pendiente">0</span>)</h2>
@@ -490,59 +522,47 @@
         </div>
     </div>
 
-    <!-- SECCIÓN 2: VISTA DE LISTA DE TODAS LAS TAREAS -->
     <div id="section-list" class="view-section hidden">
         <div class="list-view-container">
-            <h2 style="margin-top: 0; color: var(--primary); font-family: 'Playfair Display', serif;" id="list-title">Agenda General de Tareas</h2>
+            <h2 style="margin-top: 0; margin-bottom: 25px; color: var(--primary); font-family: 'Playfair Display', serif; font-size: 1.8rem; letter-spacing: 0.5px;">Mis tareas asignadas</h2>
             <table class="task-table">
                 <thead>
                     <tr>
-                        <th>Tarea / Pedido / Evento</th>
-                        <th>Persona Asignada</th>
+                        <th>Tarea / Pedido</th>
                         <th>Estado / Fase</th>
                         <th>Fecha de Entrega</th>
                         <th>Estado Plazo</th>
                     </tr>
                 </thead>
-                <tbody id="allTasksTableBody">
+                <tbody id="myTasksTableBody">
                     <tr>
-                        <td colspan="5" style="text-align: center; color: var(--neutral-muted);">No hay registros disponibles en la agenda.</td>
+                        <td colspan="4" style="text-align: center; color: var(--neutral-muted);">No tienes tareas asignadas aún.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- SECCIÓN 3: DASHBOARD INDIVIDUAL / DE SELECCIÓN -->
     <div id="section-my-db" class="view-section hidden">
-        <div class="form-container hidden" id="adminUserSelectorContainer" style="margin-bottom: 20px;">
-            <div class="form-group" style="max-width: 350px;">
-                <label for="dbUserSelector">Visualizar métricas individuales de:</label>
-                <select id="dbUserSelector" onchange="actualizarDashboardIndividual()"></select>
-            </div>
-        </div>
-        
-        <h2 style="margin-top: 0; color: var(--primary); font-family: 'Playfair Display', serif; text-align: center;" id="my-db-title">Rendimiento Individual</h2>
         <div class="dashboard-grid">
             <div class="db-card">
-                <h4>Distribución de Tareas</h4>
+                <h4>Distribución de mis Tareas</h4>
                 <div class="chart-wrapper">
                     <canvas id="myTasksChart"></canvas>
                 </div>
             </div>
             <div class="db-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                <h4>Índice de Entregas a Tiempo</h4>
-                <h1 style="font-size: 3.5rem; color: var(--primary); margin: 10px 0;" id="myEfficacyRate">0%</h1>
-                <p style="color: var(--neutral-muted); font-size: 0.9rem;">De la totalidad de tareas asignadas.</p>
+                <h4>Índice de entregas a tiempo</h4>
+                <h1 style="font-size: 3.5rem; font-family: 'Playfair Display', serif; color: var(--primary); margin: 15px 0;" id="myEfficacyRate">0%</h1>
+                <p style="color: var(--neutral-muted); font-size: 0.9rem; max-width: 200px; line-height: 1.4;">De tus tareas totales completadas.</p>
             </div>
         </div>
     </div>
 
-    <!-- SECCIÓN 4: DASHBOARD GENERAL GLOBAL -->
     <div id="section-global-db" class="view-section hidden">
         <div class="dashboard-grid">
             <div class="db-card">
-                <h4>Distribución Global del Taller</h4>
+                <h4>Estado Global del Taller</h4>
                 <div class="chart-wrapper">
                     <canvas id="globalTasksChart"></canvas>
                 </div>
@@ -550,11 +570,11 @@
             
             <div class="db-card">
                 <h4>🏆 Ranking de Eficiencia</h4>
-                <p style="font-size: 0.8rem; color: var(--neutral-muted); margin-bottom: 10px;">Compañeras con mayor número de tareas finalizadas con éxito</p>
+                <p style="font-size: 0.8rem; color: var(--neutral-muted); margin-bottom: 15px;">Compañeras con más tareas completadas con éxito</p>
                 <table class="ranking-table">
                     <thead>
                         <tr>
-                            <th>Identificación</th>
+                            <th>Compañera</th>
                             <th style="text-align: right;">Listas ✓</th>
                         </tr>
                     </thead>
@@ -564,11 +584,11 @@
 
             <div class="db-card">
                 <h4>⚠️ Control de Retrasos e Incidencias</h4>
-                <p style="font-size: 0.8rem; color: var(--neutral-muted); margin-bottom: 10px;">Compañeras con tareas atrasadas o entregadas con retraso</p>
+                <p style="font-size: 0.8rem; color: var(--neutral-muted); margin-bottom: 15px;">Compañeras con tareas actualmente vencidas o fuera de plazo</p>
                 <table class="ranking-table">
                     <thead>
                         <tr>
-                            <th>Identificación</th>
+                            <th>Compañera</th>
                             <th style="text-align: right; color: var(--color-pendiente);">Retrasos ⚠️</th>
                         </tr>
                     </thead>
@@ -580,7 +600,7 @@
 </div>
 
 <script>
-    // Parámetros y Reglas de Validación de la Organización
+    // Configuración y Validación de Reglas de Negocio de Atelier
     const DOMINIOS_PERMITIDOS = ['@atelierdelaflor.com', '@atelierhomevalencia.com'];
     const EMAILS_ADMINISTRADORES = ['info@atelierdelaflor.com', 'administracion@atelierdelaflor.com', 'bodas@atelierdelaflor.com'];
     const PASSWORD_REQUERIDA = 'atelier2026';
@@ -609,45 +629,27 @@
     let globalChartInstance = null;
 
     window.addEventListener('DOMContentLoaded', () => {
-        // Obtenemos sesión desde sessionStorage para que se pierda de inmediato al cerrar la pestaña
         const savedEmail = sessionStorage.getItem('atelier_email');
         if (savedEmail) {
             entrarAlPanel(savedEmail);
         }
     });
 
-    // Eventos de desconexión y latido para asegurar que el estado online sea preciso al salir
-    window.addEventListener('beforeunload', () => {
-        marcarDesconexionManual();
-    });
-
-    window.addEventListener('unload', () => {
-        marcarDesconexionManual();
-    });
-
-    function marcarDesconexionManual() {
-        if (!miEmail) return;
-        const nodoUsuario = miEmail.replace(/\./g, '_');
-        db.ref('equipo/' + nodoUsuario).update({
-            lastSeen: 0 
-        });
-    }
-
     document.getElementById('authForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const email = document.getElementById('authEmail').value.trim().toLowerCase();
         const password = document.getElementById('authPassword').value;
 
-        // Validar Dominio Corporativo
+        // 1. Validar Dominio Corporativo
         const dominioValido = DOMINIOS_PERMITIDOS.some(dominio => email.endsWith(dominio));
         if (!dominioValido) {
-            alert(`Acceso denegado: El correo debe pertenecer a los dominios autorizados.`);
+            alert(`Acceso denegado: El correo electrónico debe pertenecer a uno de los dominios autorizados de la marca.`);
             return;
         }
 
-        // Validar Contraseña Genérica Unificada
+        // 2. Validar Contraseña Genérica Unificada
         if (password !== PASSWORD_REQUERIDA) {
-            alert(`Contraseña de acceso no válida.`);
+            alert(`Contraseña incorrecta. Introduce la clave proporcionada por dirección.`);
             return;
         }
 
@@ -660,20 +662,18 @@
         document.getElementById('authScreen').classList.add('hidden');
         document.getElementById('mainContent').classList.remove('hidden');
         
-        const esAdmin = EMAILS_ADMINISTRADORES.includes(miEmail);
-        let rolStr = esAdmin ? " (Administración)" : " (Taller/Decoración)";
-        document.getElementById('userWelcome').innerText = `Tallerista: ${email}${rolStr}`;
+        let rolStr = EMAILS_ADMINISTRADORES.includes(miEmail) ? " (Gestora/Administración)" : " (Diseñadora/Taller)";
+        document.getElementById('userWelcome').innerText = `Sesión activa: ${email}${rolStr}`;
         
         setTimeout(() => {
             document.getElementById('sync-status').innerHTML = "🟢 Conexión segura en tiempo real con Firebase";
-            document.getElementById('sync-status').style.backgroundColor = "#e2efda";
-            document.getElementById('sync-status').style.color = "#375623";
+            document.getElementById('sync-status').style.backgroundColor = "#E6EFE6";
+            document.getElementById('sync-status').style.color = "#4E6E4F";
+            document.getElementById('sync-status').style.borderColor = "rgba(113, 143, 116, 0.2)";
         }, 1500);
 
-        // Control de interfaces según rol
-        if (esAdmin) {
+        if (EMAILS_ADMINISTRADORES.includes(miEmail)) {
             document.getElementById('adminFormContainer').classList.remove('hidden');
-            document.getElementById('adminUserSelectorContainer').classList.remove('hidden');
         }
 
         enviarLatidoDePresencia();
@@ -691,18 +691,26 @@
         });
     }
 
+    window.addEventListener('beforeunload', () => {
+        if (miEmail) {
+            const nodoUsuario = miEmail.replace(/\./g, '_');
+            db.ref('equipo/' + nodoUsuario).set({
+                email: miEmail,
+                lastSeen: 0 
+            });
+        }
+    });
+
     function arrancarSincronizacion() {
-        // Escuchar equipo activo y marcas de tiempo en Firebase
         db.ref('equipo').on('value', function(snapshot) {
             const data = snapshot.val();
             localEquipo = data ? data : {};
             procesarYMostrarEquipo();
-            actualizarSelectoresEmpleados();
+            actualizarSelectorEmpleados();
         });
 
         setInterval(procesarYMostrarEquipo, 5000);
 
-        // Escuchar cambios de tareas en Firebase
         db.ref('tasks').on('value', function(snapshot) {
             const data = snapshot.val();
             localTasks = {};
@@ -715,7 +723,7 @@
                 });
             }
             renderTasks();
-            renderAllTasksTable();
+            renderMyTasksTable();
             actualizarDashboards();
         });
     }
@@ -725,63 +733,32 @@
         activeDiv.innerHTML = '';
 
         const ahora = Date.now();
-        const LIMITE_ONLINE = 25000; // 25 segundos para declarar inactividad
+        const LIMITE_ONLINE = 25000;
 
         Object.values(localEquipo).forEach(miembro => {
             const esOnline = (ahora - miembro.lastSeen) < LIMITE_ONLINE;
             const tag = document.createElement('span');
-            
-            if (esOnline) {
-                tag.className = 'participant-tag';
-                tag.innerHTML = `🟢 ${miembro.email}`;
-            } else {
-                tag.className = 'participant-tag offline';
-                const fecha = miembro.lastSeen && miembro.lastSeen > 0 
-                    ? new Date(miembro.lastSeen).toLocaleString('es-ES', {hour: '2-digit', minute:'2-digit', day: 'numeric', month: 'short'})
-                    : 'Sin registro previo';
-                tag.innerHTML = `💤 ${miembro.email} <span style="font-size:0.7rem; color:var(--neutral-muted);">(${fecha})</span>`;
-            }
+            tag.className = `participant-tag ${esOnline ? '' : 'offline'}`;
+            tag.innerText = `${miembro.email} ${esOnline ? '🟢' : '💤'}`;
             activeDiv.appendChild(tag);
         });
     }
 
-    // Actualiza los desplegables de selección de personal
-    function actualizarSelectoresEmpleados() {
-        const selectAsignacion = document.getElementById('taskWorker');
-        const selectSelectorMetricas = document.getElementById('dbUserSelector');
+    function actualizarSelectorEmpleados() {
+        const select = document.getElementById('taskWorker');
+        if (!select) return;
         
-        const valAsignacion = selectAsignacion ? selectAsignacion.value : "";
-        const valMetricas = selectSelectorMetricas ? selectSelectorMetricas.value : "";
-
-        if (selectAsignacion) selectAsignacion.innerHTML = '<option value="">Seleccionar cuenta...</option>';
-        if (selectSelectorMetricas) selectSelectorMetricas.innerHTML = '';
+        const valorActual = select.value;
+        select.innerHTML = '<option value="">Selecciona una compañera...</option>';
 
         Object.values(localEquipo).forEach(miembro => {
-            // Rellenar selector de asignación
-            if (selectAsignacion) {
-                const opt1 = document.createElement('option');
-                opt1.value = miembro.email;
-                opt1.innerText = miembro.email;
-                selectAsignacion.appendChild(opt1);
-            }
-
-            // Rellenar selector de métricas
-            if (selectSelectorMetricas) {
-                const opt2 = document.createElement('option');
-                opt2.value = miembro.email;
-                opt2.innerText = miembro.email;
-                selectSelectorMetricas.appendChild(opt2);
-            }
+            const opt = document.createElement('option');
+            opt.value = miembro.email;
+            opt.innerText = miembro.email;
+            select.appendChild(opt);
         });
 
-        if (selectAsignacion) selectAsignacion.value = valAsignacion;
-        if (selectSelectorMetricas) {
-            if(valMetricas && selectSelectorMetricas.querySelector(`option[value="${valMetricas}"]`)) {
-                selectSelectorMetricas.value = valMetricas;
-            } else {
-                selectSelectorMetricas.value = miEmail;
-            }
-        }
+        select.value = valorActual;
     }
 
     window.switchView = function(viewId) {
@@ -789,14 +766,13 @@
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
 
         document.getElementById(`section-${viewId}`).classList.remove('hidden');
-        document.getElementById(`btn-${viewId}`).classList.add('active');
+        event.currentTarget.classList.add('active');
 
         if(viewId === 'my-db' || viewId === 'global-db') {
             actualizarDashboards();
         }
     };
 
-    // Creación de tareas
     const taskForm = document.getElementById('taskForm');
     if(taskForm) {
         taskForm.addEventListener('submit', function(e) {
@@ -826,12 +802,11 @@
     };
 
     window.deleteTask = function(id) {
-        if(confirm('¿Confirmas la eliminación permanente de esta tarea?')) {
+        if(confirm('¿Quieres eliminar permanentemente esta tarea?')) {
             db.ref('tasks/' + id).update({ active: false });
         }
     };
 
-    // Renderizar Tablero Kanban
     function renderTasks() {
         const columns = {
             pendiente: document.getElementById('tasks-pendiente'),
@@ -846,7 +821,6 @@
         columns.completada.innerHTML = '';
 
         const today = new Date().toISOString().split('T')[0];
-        const esAdmin = EMAILS_ADMINISTRADORES.includes(miEmail);
 
         Object.values(localTasks).forEach(task => {
             if (!task.status || !task.active) return;
@@ -855,7 +829,7 @@
 
             const isVencida = task.deadline < today && task.status !== 'completada';
             const deadlineClass = isVencida ? 'vencida' : '';
-            const alertaVencido = isVencida ? ' ⚠️ RETRASADA' : '';
+            const alertaVencido = isVencida ? ' ⚠️ ATRASADA' : '';
 
             if(isVencida && !task.vencidaHistorica) {
                 db.ref('tasks/' + task.id).update({ vencidaHistorica: true });
@@ -885,10 +859,10 @@
                 <h3>${task.title}</h3>
                 <div class="task-info">
                     <div><strong>Asignado a:</strong> ${task.worker}</div>
-                    <div class="${deadlineClass}"><strong>Fecha Entrega:</strong> ${dateFormatted}${alertaVencido}</div>
+                    <div class="${deadlineClass}"><strong>Vence:</strong> ${dateFormatted}${alertaVencido}</div>
                 </div>
                 <div class="task-actions">
-                    ${esAdmin ? `<button class="btn-action btn-delete" onclick="deleteTask('${task.id}')">Eliminar</button>` : ''}
+                    ${EMAILS_ADMINISTRADORES.includes(miEmail) ? `<button class="btn-action btn-delete" onclick="deleteTask('${task.id}')">Eliminar</button>` : ''}
                     ${buttonsHTML}
                 </div>
             `;
@@ -901,22 +875,21 @@
         document.getElementById('count-completada').innerText = counts.completada;
     }
 
-    // Vista de Listado General (Todas las tareas visibles para todo el equipo)
-    function renderAllTasksTable() {
-        const tbody = document.getElementById('allTasksTableBody');
+    function renderMyTasksTable() {
+        const tbody = document.getElementById('myTasksTableBody');
         tbody.innerHTML = '';
 
-        const activeTasks = Object.values(localTasks).filter(task => task.active);
+        const myTasks = Object.values(localTasks).filter(task => task.active && task.worker === miEmail);
         const today = new Date().toISOString().split('T')[0];
 
-        if (activeTasks.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--neutral-muted);">No hay tareas asignadas en la agenda.</td></tr>`;
+        if (myTasks.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--neutral-muted); padding: 30px;">No tienes tareas de las que preocuparte hoy. ¡Buen trabajo!</td></tr>`;
             return;
         }
 
-        activeTasks.forEach(task => {
+        myTasks.forEach(task => {
             const isVencida = task.deadline < today && task.status !== 'completada';
-            const estadoPlazo = isVencida ? '🔴 Retrasada' : (task.status === 'completada' ? '🟢 Entregada' : '🟢 En plazo');
+            const estadoPlazo = isVencida ? '🔴 Entrega retrasada' : (task.status === 'completada' ? '🟢 Entregado' : '🟢 En plazo');
             const row = document.createElement('tr');
             
             let dateFormatted = task.deadline;
@@ -927,7 +900,6 @@
 
             row.innerHTML = `
                 <td style="font-weight:600;">${task.title}</td>
-                <td style="color:var(--primary); font-size:0.85rem;">${task.worker}</td>
                 <td><span class="badge ${task.status}">${task.status === 'pendiente' ? 'Pendiente' : task.status === 'proceso' ? 'Preparando' : 'Listo'}</span></td>
                 <td>${dateFormatted}</td>
                 <td class="${isVencida ? 'vencida' : ''}">${estadoPlazo}</td>
@@ -936,32 +908,19 @@
         });
     }
 
-    // Actualización de Dashboards y Gráficos
     function actualizarDashboards() {
-        actualizarDashboardIndividual();
-        actualizarDashboardGlobal();
-    }
-
-    function actualizarDashboardIndividual() {
-        const selector = document.getElementById('dbUserSelector');
-        // Si es admin puede consultar el de cualquier persona, si no, se fuerza su propio email
-        const usuarioObjetivo = EMAILS_ADMINISTRADORES.includes(miEmail) ? (selector.value || miEmail) : miEmail;
-
-        document.getElementById('my-db-title').innerText = `Métricas individuales: ${usuarioObjetivo}`;
-
         const today = new Date().toISOString().split('T')[0];
         const allTasks = Object.values(localTasks).filter(t => t.active);
         
-        const userTasks = allTasks.filter(t => t.worker === usuarioObjetivo);
-        const pendientes = userTasks.filter(t => t.status === 'pendiente').length;
-        const proceso = userTasks.filter(t => t.status === 'proceso').length;
-        const completadas = userTasks.filter(t => t.status === 'completada').length;
+        const myTasks = allTasks.filter(t => t.worker === miEmail);
+        const myPendientes = myTasks.filter(t => t.status === 'pendiente').length;
+        const myProceso = myTasks.filter(t => t.status === 'proceso').length;
+        const myCompletadas = myTasks.filter(t => t.status === 'completada').length;
 
-        // Tasa de eficiencia personal
-        const totalCompletadas = userTasks.filter(t => t.status === 'completada').length;
-        const totalAtrasadasHist = userTasks.filter(t => t.status === 'completada' && t.vencidaHistorica).length;
-        const aTiempo = totalCompletadas - totalAtrasadasHist;
-        const porcentaje = totalCompletadas > 0 ? Math.round((aTiempo / totalCompletadas) * 100) : 100;
+        const totalCompletasMy = myTasks.filter(t => t.status === 'completada').length;
+        const totalAtrasadasMyHist = myTasks.filter(t => t.status === 'completada' && t.vencidaHistorica).length;
+        const aTiempo = totalCompletasMy - totalAtrasadasMyHist;
+        const porcentaje = totalCompletasMy > 0 ? Math.round((aTiempo / totalCompletasMy) * 100) : 100;
         document.getElementById('myEfficacyRate').innerText = `${porcentaje}%`;
 
         if (myChartInstance) myChartInstance.destroy();
@@ -971,17 +930,12 @@
             data: {
                 labels: ['Pendientes', 'En Preparación', 'Listos'],
                 datasets: [{
-                    data: [pendientes, proceso, completadas],
-                    backgroundColor: ['#e74c3c', '#f1c40f', '#2ecc71']
+                    data: [myPendientes, myProceso, myCompletadas],
+                    backgroundColor: ['#E56A5E', '#E9B858', '#7A9A7D']
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
-    }
-
-    function actualizarDashboardGlobal() {
-        const today = new Date().toISOString().split('T')[0];
-        const allTasks = Object.values(localTasks).filter(t => t.active);
 
         const gPendientes = allTasks.filter(t => t.status === 'pendiente').length;
         const gProceso = allTasks.filter(t => t.status === 'proceso').length;
@@ -995,13 +949,12 @@
                 labels: ['Pendientes', 'Preparación', 'Completados'],
                 datasets: [{
                     data: [gPendientes, gProceso, gCompletadas],
-                    backgroundColor: ['#e74c3c', '#f1c40f', '#2ecc71']
+                    backgroundColor: ['#E56A5E', '#E9B858', '#7A9A7D']
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // Rankings Generales
         const rankingCompleto = {};
         const rankingFallos = {};
 
@@ -1022,7 +975,6 @@
             }
         });
 
-        // Tabla Eficiencia
         const listEf = Object.entries(rankingCompleto).sort((a,b) => b[1] - a[1]);
         const efBody = document.getElementById('rankingEfficiencyBody');
         efBody.innerHTML = '';
@@ -1032,7 +984,6 @@
             efBody.appendChild(row);
         });
 
-        // Tabla Fallos
         const listFl = Object.entries(rankingFallos).sort((a,b) => b[1] - a[1]);
         const flBody = document.getElementById('rankingDelaysBody');
         flBody.innerHTML = '';
