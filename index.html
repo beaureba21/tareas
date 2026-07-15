@@ -447,7 +447,6 @@
 
 <div id="authScreen" class="auth-screen">
     <div class="logo-frame">
-        <!-- Enlace en la nube de Google Drive corregido para acceso global directo -->
         <img src="https://lh3.googleusercontent.com/u/0/d/1QBuFp_iyt7CcldGBnUxeXYzQuOJy-eLN" alt="Atelier de la Flor" class="brand-logo">
     </div>
     <p>Introduce tus credenciales corporativas para acceder al panel de agendas de taller.</p>
@@ -466,7 +465,6 @@
 
 <div id="mainContent" class="container hidden">
     <header>
-        <!-- Enlace en la nube de Google Drive corregido en cabecera de la aplicación -->
         <img src="https://lh3.googleusercontent.com/u/0/d/1QBuFp_iyt7CcldGBnUxeXYzQuOJy-eLN" alt="Atelier de la Flor" class="brand-logo">
         <div class="status-badge" id="sync-status">🔄 Sincronizando agendas con Firebase...</div>
         <div id="userWelcome" style="font-weight: 500; color: var(--neutral-muted); font-size: 0.9rem; letter-spacing: 0.3px;"></div>
@@ -623,6 +621,7 @@
     let localTasks = {};
     let localEquipo = {};
     let miEmail = "";
+    let isInitialLoad = true; // Control de carga inicial para evitar alertas masivas al iniciar sesión
 
     // Instancias de Gráficos (Chart.js)
     let myChartInstance = null;
@@ -679,7 +678,67 @@
         enviarLatidoDePresencia();
         setInterval(enviarLatidoDePresencia, 10000);
 
+        // Solicitar permisos para notificaciones en el navegador
+        solicitarPermisoNotificaciones();
+
         arrancarSincronizacion();
+    }
+
+    // Solicitar permiso de notificaciones nativas en navegador
+    function solicitarPermisoNotificaciones() {
+        if ('Notification' in window) {
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+        }
+    }
+
+    // Generar un sonido de notificación sutil tipo campana por síntesis de audio
+    function reproducirSonidoNotificacion() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Tono base (Nota Mi)
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime); // Mi5
+            gain1.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+            
+            // Tono secundario rápido armonizado (Nota La)
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(880, audioCtx.currentTime + 0.08); // La5
+            gain2.gain.setValueAtTime(0.08, audioCtx.currentTime + 0.08);
+            gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+
+            osc1.start();
+            osc1.stop(audioCtx.currentTime + 0.35);
+            osc2.start(audioCtx.currentTime + 0.08);
+            osc2.stop(audioCtx.currentTime + 0.45);
+        } catch (e) {
+            console.log("El navegador impidió la reproducción del sonido hasta que el usuario interactúe con la página.", e);
+        }
+    }
+
+    // Disparar Notificación de Escritorio y Sonido
+    function enviarNotificacion(titulo, cuerpo) {
+        // Reproducir el sonido sintético
+        reproducirSonidoNotificacion();
+
+        // Lanzar notificación en banner si tenemos permiso
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(titulo, {
+                body: cuerpo,
+                icon: 'https://lh3.googleusercontent.com/u/0/d/1QBuFp_iyt7CcldGBnUxeXYzQuOJy-eLN'
+            });
+        }
     }
 
     function enviarLatidoDePresencia() {
@@ -711,6 +770,7 @@
 
         setInterval(procesarYMostrarEquipo, 5000);
 
+        // Carga y sincronización general del estado
         db.ref('tasks').on('value', function(snapshot) {
             const data = snapshot.val();
             localTasks = {};
@@ -725,11 +785,33 @@
             renderTasks();
             renderMyTasksTable();
             actualizarDashboards();
+            
+            // Al completar la primera carga, desactivamos la bandera de inicio para permitir notificaciones futuras
+            isInitialLoad = false;
+        });
+
+        // Evento directo en tiempo real al añadir un hijo en el nodo "tasks"
+        db.ref('tasks').on('child_added', function(snapshot) {
+            const task = snapshot.val();
+            if (!isInitialLoad && task && task.active !== false) {
+                const soyCreador = (miEmail === task.creadorPor);
+                const esParaMi = (task.worker === miEmail);
+                const soyAdmin = EMAILS_ADMINISTRADORES.includes(miEmail);
+
+                // Notificar si es una tarea asignada a mí o si soy admin (y no la creé yo)
+                if ((esParaMi || soyAdmin) && !soyCreador) {
+                    enviarNotificacion(
+                        "🌸 Nueva Tarea Asignada",
+                        `Pedido: ${task.title}\nAsignado a: ${task.worker}\nFecha límite: ${task.deadline}`
+                    );
+                }
+            }
         });
     }
 
     function procesarYMostrarEquipo() {
         const activeDiv = document.getElementById('activeList');
+        if (!activeDiv) return;
         activeDiv.innerHTML = '';
 
         const ahora = Date.now();
@@ -790,7 +872,8 @@
                 deadline: deadline,
                 status: 'pendiente',
                 active: true,
-                vencidaHistorica: false
+                vencidaHistorica: false,
+                creadorPor: miEmail // Atributo clave para prevenir autonotificaciones de la misma creadora
             });
 
             taskForm.reset();
@@ -877,6 +960,7 @@
 
     function renderMyTasksTable() {
         const tbody = document.getElementById('myTasksTableBody');
+        if (!tbody) return;
         tbody.innerHTML = '';
 
         const myTasks = Object.values(localTasks).filter(task => task.active && task.worker === miEmail);
@@ -921,39 +1005,47 @@
         const totalAtrasadasMyHist = myTasks.filter(t => t.status === 'completada' && t.vencidaHistorica).length;
         const aTiempo = totalCompletasMy - totalAtrasadasMyHist;
         const porcentaje = totalCompletasMy > 0 ? Math.round((aTiempo / totalCompletasMy) * 100) : 100;
-        document.getElementById('myEfficacyRate').innerText = `${porcentaje}%`;
+        
+        const myEfficacyElem = document.getElementById('myEfficacyRate');
+        if (myEfficacyElem) myEfficacyElem.innerText = `${porcentaje}%`;
 
-        if (myChartInstance) myChartInstance.destroy();
-        const ctxMy = document.getElementById('myTasksChart').getContext('2d');
-        myChartInstance = new Chart(ctxMy, {
-            type: 'doughnut',
-            data: {
-                labels: ['Pendientes', 'En Preparación', 'Listos'],
-                datasets: [{
-                    data: [myPendientes, myProceso, myCompletadas],
-                    backgroundColor: ['#E56A5E', '#E9B858', '#7A9A7D']
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        const myChartElem = document.getElementById('myTasksChart');
+        if (myChartElem) {
+            if (myChartInstance) myChartInstance.destroy();
+            const ctxMy = myChartElem.getContext('2d');
+            myChartInstance = new Chart(ctxMy, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendientes', 'En Preparación', 'Listos'],
+                    datasets: [{
+                        data: [myPendientes, myProceso, myCompletadas],
+                        backgroundColor: ['#E56A5E', '#E9B858', '#7A9A7D']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
 
         const gPendientes = allTasks.filter(t => t.status === 'pendiente').length;
         const gProceso = allTasks.filter(t => t.status === 'proceso').length;
         const gCompletadas = allTasks.filter(t => t.status === 'completada').length;
 
-        if (globalChartInstance) globalChartInstance.destroy();
-        const ctxGlobal = document.getElementById('globalTasksChart').getContext('2d');
-        globalChartInstance = new Chart(ctxGlobal, {
-            type: 'pie',
-            data: {
-                labels: ['Pendientes', 'Preparación', 'Completados'],
-                datasets: [{
-                    data: [gPendientes, gProceso, gCompletadas],
-                    backgroundColor: ['#E56A5E', '#E9B858', '#7A9A7D']
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        const globalChartElem = document.getElementById('globalTasksChart');
+        if (globalChartElem) {
+            if (globalChartInstance) globalChartInstance.destroy();
+            const ctxGlobal = globalChartElem.getContext('2d');
+            globalChartInstance = new Chart(ctxGlobal, {
+                type: 'pie',
+                data: {
+                    labels: ['Pendientes', 'Preparación', 'Completados'],
+                    datasets: [{
+                        data: [gPendientes, gProceso, gCompletadas],
+                        backgroundColor: ['#E56A5E', '#E9B858', '#7A9A7D']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
 
         const rankingCompleto = {};
         const rankingFallos = {};
@@ -977,21 +1069,25 @@
 
         const listEf = Object.entries(rankingCompleto).sort((a,b) => b[1] - a[1]);
         const efBody = document.getElementById('rankingEfficiencyBody');
-        efBody.innerHTML = '';
-        listEf.forEach(([user, count]) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td>${user}</td><td style="text-align:right; font-weight:bold; color:var(--color-completada);">${count}</td>`;
-            efBody.appendChild(row);
-        });
+        if (efBody) {
+            efBody.innerHTML = '';
+            listEf.forEach(([user, count]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${user}</td><td style="text-align:right; font-weight:bold; color:var(--color-completada);">${count}</td>`;
+                efBody.appendChild(row);
+            });
+        }
 
         const listFl = Object.entries(rankingFallos).sort((a,b) => b[1] - a[1]);
         const flBody = document.getElementById('rankingDelaysBody');
-        flBody.innerHTML = '';
-        listFl.forEach(([user, count]) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td>${user}</td><td style="text-align:right; font-weight:bold; color:var(--color-pendiente);">${count}</td>`;
-            flBody.appendChild(row);
-        });
+        if (flBody) {
+            flBody.innerHTML = '';
+            listFl.forEach(([user, count]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${user}</td><td style="text-align:right; font-weight:bold; color:var(--color-pendiente);">${count}</td>`;
+                flBody.appendChild(row);
+            });
+        }
     }
 </script>
 </body>
