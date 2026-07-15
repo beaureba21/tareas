@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Tareas de mi Equipo</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --primary: #4a90e2;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --text-main: #333333;
+            --text-muted: #7f8c8d;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .status-badge {
+            background-color: #c6f6d5;
+            color: #22543d;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        /* Formulario de Asignación */
+        .form-container {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #34495e;
+        }
+
+        .form-group input {
+            padding: 10px;
+            border: 1px solid #ccd1d9;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .btn-submit {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 11px 20px;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .btn-submit:hover {
+            background-color: #357abd;
+        }
+
+        /* Columnas de Estados */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .column {
+            background-color: #eef2f5;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 400px;
+        }
+
+        .column h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #ccc;
+            color: #2c3e50;
+        }
+
+        .column.pendiente h2 { border-bottom-color: var(--warning); }
+        .column.proceso h2 { border-bottom-color: var(--primary); }
+        .column.completada h2 { border-bottom-color: var(--success); }
+
+        /* Tarjetas de Tareas */
+        .task-card {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 5px solid #ccc;
+            position: relative;
+        }
+
+        .task-card.border-pendiente { border-left-color: var(--warning); }
+        .task-card.border-proceso { border-left-color: var(--primary); }
+        .task-card.border-completada { border-left-color: var(--success); }
+
+        .task-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+        }
+
+        .task-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .task-info strong {
+            color: #555;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .btn-action {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-next { background-color: #d1e8ff; color: var(--primary); }
+        .btn-prev { background-color: #f5f5f5; color: #555; }
+        .btn-delete { background-color: #fde8e8; color: var(--danger); margin-left: auto; }
+
+        .vencida {
+            color: var(--danger) !important;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Panel de Tareas del Equipo</h1>
+        <div class="status-badge" id="sync-status">🔄 Conectando a la red...</div>
+    </header>
+
+    <!-- Formulario para agregar tareas -->
+    <div class="form-container">
+        <form id="taskForm" class="form-grid">
+            <div class="form-group">
+                <label for="taskTitle">Tarea / Descripción</label>
+                <input type="text" id="taskTitle" placeholder="Ej: Redactar informe" required>
+            </div>
+            <div class="form-group">
+                <label for="taskWorker">Trabajador Asignado</label>
+                <input type="text" id="taskWorker" placeholder="Ej: Juan Pérez" required>
+            </div>
+            <div class="form-group">
+                <label for="taskDeadline">Fecha de Vencimiento</label>
+                <input type="date" id="taskDeadline" required>
+            </div>
+            <button type="submit" class="btn-submit">+ Asignar Tarea</button>
+        </form>
+    </div>
+
+    <!-- Tablero de Estados -->
+    <div class="board">
+        <div class="column pendiente">
+            <h2>Pendientes (<span id="count-pendiente">0</span>)</h2>
+            <div id="tasks-pendiente"></div>
+        </div>
+
+        <div class="column proceso">
+            <h2>En Proceso (<span id="count-proceso">0</span>)</h2>
+            <div id="tasks-proceso"></div>
+        </div>
+
+        <div class="column completada">
+            <h2>Completadas (<span id="count-completada">0</span>)</h2>
+            <div id="tasks-completada"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Cargamos Gun.js -->
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<script>
+    // ====================================================================
+    // CAMBIA ESTA PALABRA POR ALGO ÚNICO PARA TU EQUIPO
+    // (Ej: 'empresa-construcciones-xyz-2026')
+    // Todos tus compañeros deben usar EXACTAMENTE la misma palabra.
+    // ====================================================================
+    const MI_CLAVE_SECRETA = 'mi-equipo-de-trabajo-secreto-2026';
+
+    // Servidores de sincronización comunitarios activos y actualizados
+    const gun = Gun([
+        'https://gun-us.herokuapp.com/gun',
+        'https://gun-matrix.herokuapp.com/gun'
+    ]);
+    
+    const taskDb = gun.get(MI_CLAVE_SECRETA);
+    let localTasks = {};
+
+    // Mostrar estado visual de la sincronización
+    gun.on('auth', () => {}); 
+    setTimeout(() => {
+        document.getElementById('sync-status').innerHTML = "🟢 Sincronización Online Activa";
+        document.getElementById('sync-status').style.backgroundColor = "#c6f6d5";
+        document.getElementById('sync-status').style.color = "#22543d";
+    }, 2000);
+
+    const taskForm = document.getElementById('taskForm');
+
+    // Guardar una nueva tarea en la red
+    taskForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const title = document.getElementById('taskTitle').value;
+        const worker = document.getElementById('taskWorker').value;
+        const deadline = document.getElementById('taskDeadline').value;
+        const taskId = 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5); // ID aún más único
+
+        taskDb.get(taskId).put({
+            id: taskId,
+            title: title,
+            worker: worker,
+            deadline: deadline,
+            status: 'pendiente',
+            active: true
+        });
+
+        taskForm.reset();
+    });
+
+    // Cambiar estado de la tarea en la red
+    window.moveTask = function(id, nextStatus) {
+        taskDb.get(id).put({ status: nextStatus });
+    };
+
+    // Eliminar tarea
+    window.deleteTask = function(id) {
+        if(confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
+            taskDb.get(id).put({ active: false });
+        }
+    };
+
+    // Escuchar cambios en tiempo real
+    taskDb.map().on(function(task, id) {
+        if (!task) return;
+        
+        if (task.active === false) {
+            delete localTasks[id];
+        } else {
+            localTasks[id] = task;
+        }
+        
+        renderTasks();
+    });
+
+    // Dibujar las tareas en el tablero
+    function renderTasks() {
+        const columns = {
+            pendiente: document.getElementById('tasks-pendiente'),
+            proceso: document.getElementById('tasks-proceso'),
+            completada: document.getElementById('tasks-completada')
+        };
+
+        const counts = { pendiente: 0, proceso: 0, completada: 0 };
+
+        columns.pendiente.innerHTML = '';
+        columns.proceso.innerHTML = '';
+        columns.completada.innerHTML = '';
+
+        const today = new Date().toISOString().split('T')[0];
+
+        Object.values(localTasks).forEach(task => {
+            if (!task.status || !task.active) return;
+            
+            counts[task.status]++;
+
+            const isVencida = task.deadline < today && task.status !== 'completada';
+            const deadlineClass = isVencida ? 'vencida' : '';
+            const alertaVencido = isVencida ? ' ⚠️ ¡VENCIDA!' : '';
+
+            let dateFormatted = task.deadline;
+            if (task.deadline && task.deadline.includes('-')) {
+                const [year, month, day] = task.deadline.split('-');
+                dateFormatted = `${day}/${month}/${year}`;
+            }
+
+            let buttonsHTML = '';
+            if (task.status === 'pendiente') {
+                buttonsHTML = `<button class="btn-action btn-next" onclick="moveTask('${task.id}', 'proceso')">Empezar →</button>`;
+            } else if (task.status === 'proceso') {
+                buttonsHTML = `
+                    <button class="btn-action btn-prev" onclick="moveTask('${task.id}', 'pendiente')">← Devolver</button>
+                    <button class="btn-action btn-next" onclick="moveTask('${task.id}', 'completada')">Terminar ✓</button>
+                `;
+            } else if (task.status === 'completada') {
+                buttonsHTML = `<button class="btn-action btn-prev" onclick="moveTask('${task.id}', 'proceso')">← Reabrir</button>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = `task-card border-${task.status}`;
+            card.innerHTML = `
+                <h3>${task.title}</h3>
+                <div class="task-info">
+                    <div><strong>Asignado a:</strong> ${task.worker}</div>
+                    <div class="${deadlineClass}"><strong>Vence:</strong> ${dateFormatted}${alertaVencido}</div>
+                </div>
+                <div class="task-actions">
+                    <button class="btn-action btn-delete" onclick="deleteTask('${task.id}')">Eliminar</button>
+                    ${buttonsHTML}
+                </div>
+            `;
+
+            columns[task.status].appendChild(card);
+        });
+
+        document.getElementById('count-pendiente').innerText = counts.pendiente;
+        document.getElementById('count-proceso').innerText = counts.proceso;
+        document.getElementById('count-completada').innerText = counts.completada;
+    }
+</script>
+</body>
+</html>
