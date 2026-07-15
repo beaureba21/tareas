@@ -553,9 +553,14 @@
     const PASSWORD_REQUERIDA = 'atelier2026';
     const MI_CLAVE_SECRETA = 'atelier-de-la-flor-vanguardia-2026';
 
+    // ====================================================================
+    // SOLUCIÓN A: PEERS DE ALTA DISPONIBILIDAD CON SOPORTE SSL (HTTPS)
+    // ====================================================================
     const gun = Gun([
-        'https://gun-us.herokuapp.com/gun',
-        'https://gun-matrix.herokuapp.com/gun'
+        'https://gun-manhattan.herokuapp.com/gun',
+        'https://gundb-public.herokuapp.com/gun',
+        'https://gunjs.herokuapp.com/gun',
+        'https://gun-us.herokuapp.com/gun'
     ]);
     
     const taskDb = gun.get(MI_CLAVE_SECRETA).get('tasks');
@@ -577,7 +582,7 @@
         }
     });
 
-    // Eventos de desconexión y latido para asegurar que el estado online sea preciso
+    // Eventos de desconexión y latido para asegurar que el estado online sea preciso al salir
     window.addEventListener('beforeunload', () => {
         marcarDesconexionManual();
     });
@@ -589,7 +594,6 @@
     function marcarDesconexionManual() {
         if (!miEmail) return;
         const nodoUsuario = miEmail.replace(/\./g, '_');
-        // Marcamos un valor antiguo para que las demás pantallas detecten la desconexión de inmediato
         equipoDb.get(nodoUsuario).put({
             lastSeen: 0 
         });
